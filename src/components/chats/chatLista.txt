@@ -1,0 +1,71 @@
+<script setup>
+import { ref, onMounted } from "vue";
+import { useChatStore } from "../../store/useChatStore";
+import { useUserStore } from "../../store/userStore"; // Debes obtener el usuario desde aquí
+import { obtenerGrupos, obtenerUsuarios } from "../../services/chatService";
+import { joinRoom } from "../../services/websocket";
+
+const chatStore = useChatStore();
+const userStore = useUserStore();
+
+const grupos = ref([]);
+const usuarios = ref([]);
+const token = ref(localStorage.getItem("token")); // Recuperar token almacenado
+
+onMounted(async () => {
+  if (!userStore.usuario) {
+    console.error("❌ No hay usuario autenticado. Redirigiendo a login...");
+    return;
+  }
+
+  if (!token.value) {
+    console.error("❌ No hay token disponible.");
+    return;
+  }
+
+  try {
+    grupos.value = await obtenerGrupos(token.value);
+    console.log("✅ Grupos obtenidos:", grupos.value);
+    usuarios.value = await obtenerUsuarios(token.value);
+  } catch (error) {
+    console.error("❌ Error al obtener datos:", error);
+    console.log(object.error("❌ Error al obtener grupos:", error));
+  }
+});
+
+const seleccionarChat = (idChat, esGrupo = true) => {
+  chatStore.chatSelecionado = { id: idChat, tipo: esGrupo ? "grupo" : "directo" };
+
+  console.log("✅ Chat seleccionado:", chatStore.chatSelecionado);
+
+  joinRoom(idChat, userStore.usuario.nombre);
+};
+</script>
+
+<template>
+  <div class="chat-list">
+    <h2></h2>
+    <ul>
+      <li v-for="grupo in grupos" :key="grupo.id_grupo" @click="seleccionarChat(grupo.id_grupo, true)">
+        {{ grupo.nombre }}
+      </li>
+    </ul>
+
+    <h2>Mensajes Directos</h2>
+    <ul>
+      <li v-for="usuario in usuarios" :key="usuario.id" @click="seleccionarChat(usuario.id, false)">
+        <img :src="usuario.foto_perfil" alt="Foto de perfil" class="user-avatar" />
+        {{ usuario.nombre }}
+      </li>
+    </ul>
+  </div>
+</template>
+
+<style scoped>
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+</style>
