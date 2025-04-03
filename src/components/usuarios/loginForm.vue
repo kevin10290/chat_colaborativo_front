@@ -3,8 +3,8 @@
       <!-- Contenedor de formulario con logo -->
       <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
         <!-- Logo de la empresa -->
-        <div class="mb-6 text-center">
-          <img src="../../assets/images.png "alt="Logo de la Empresa" class="mx-auto h-16" />
+        <div class="mb-2 text-center">
+          <img src="../../assets/images.png "alt="Logo de la Empresa" class="mx-auto h-28 w-32" />
         </div>
   
         <!-- Título de la página de login -->
