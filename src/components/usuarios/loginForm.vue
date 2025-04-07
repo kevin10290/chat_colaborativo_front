@@ -82,7 +82,8 @@
     email: resultado.descripcion.dominio,
     usuario_red: resultado.descripcion.usuario_red,
     foto_perfil: resultado.descripcion.foto_perfil,
-    grupos: resultado.descripcion.grupos
+    grupos: resultado.descripcion.grupos,
+    id_rol: resultado.descripcion.id_rol
   },
   resultado.token
 );

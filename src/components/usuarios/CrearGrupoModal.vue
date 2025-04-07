@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
+import AgregarIntegrantesTable from "./AgregarIntegrantesTable.vue";
+import AlertaGeneral from '../utils/AlertaGeneral.vue';
 
 const emit = defineEmits(["close"]);
 const activeTab = ref(0);
@@ -15,6 +17,9 @@ const formErrors = ref({
   descripcion: "",
   imagen: "",
 });
+
+const activeAlert = ref(null);
+const selectedIntegrantes = ref([]);
 
 // Validación del formulario
 const isFormValid = computed(() => {
@@ -70,8 +75,45 @@ const nextStep = () => {
   }
 };
 
+const showAlert = (type, message) => {
+  // Limpiar alerta actual antes de mostrar la nueva
+  activeAlert.value = null;
+  // Esperar un tick para asegurarse de que la anterior se haya limpiado
+  nextTick(() => {
+    activeAlert.value = { type, message };
+  });
+};
+
+const handleCreateGroup = () => {
+  if (selectedIntegrantes.value.length === 0) {
+    showAlert('warning', 'Estás a punto de crear un grupo sin integrantes, ¿Deseas continuar?');
+  } else {
+    createGroup();
+  }
+};
+
+const createGroup = () => {
+  showAlert('success', 'Grupo creado exitosamente');
+  setTimeout(() => {
+    closeModal();
+  }, 2000);
+};
+
 const closeModal = () => {
+  activeAlert.value = null;
   emit("close");
+};
+
+const handleWarningResponse = (confirmed) => {
+  if (confirmed) {
+    // Limpiar la alerta de warning antes de mostrar la de éxito
+    activeAlert.value = null;
+    nextTick(() => {
+      createGroup();
+    });
+  } else {
+    activeAlert.value = null;
+  }
 };
 
 // Computed properties for tab indicator positioning
@@ -95,6 +137,36 @@ const tabIndicatorStyle = computed(() => {
 
 <template>
   <dialog open class="fixed inset-0 z-50">
+    <!-- Reemplazar las alertas anteriores con una sola alerta dinámica -->
+    <AlertaGeneral
+      v-if="activeAlert"
+      :message="activeAlert.message"
+      :type="activeAlert.type"
+      :duration="activeAlert.type === 'warning' ? 0 : 4000"
+    >
+      <template v-if="activeAlert.type === 'warning'" #actions>
+        <button
+          @click="handleWarningResponse(false)"
+          class="mr-2 px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 
+                 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 
+                 transition-all duration-200 ease-in-out focus:outline-none 
+                 focus:ring-2 focus:ring-amber-500 focus:ring-offset-1"
+        >
+          Cancelar
+        </button>
+        <button
+          @click="handleWarningResponse(true)"
+          class="px-4 py-1.5 text-sm font-medium text-white bg-amber-500 
+                 rounded-md shadow-sm hover:bg-amber-600 
+                 transition-all duration-200 ease-in-out focus:outline-none 
+                 focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 
+                 active:bg-amber-700"
+        >
+          Continuar
+        </button>
+      </template>
+    </AlertaGeneral>
+
     <div
       class="fixed inset-0 bg-black/50 backdrop-blur-sm"
       @click="closeModal"
@@ -311,23 +383,12 @@ const tabIndicatorStyle = computed(() => {
           <!-- Tab 2: Añadir participantes -->
           <div
             v-if="activeTab === 1"
-            class="h-64 flex flex-col items-center justify-center text-gray-500 space-y-3"
+            class="h-120 flex flex-col items-center justify-center text-gray-500 space-y-3"
           >
-            <svg
-              class="h-16 w-16 text-blue-100"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+            <AgregarIntegrantesTable
+              v-model:selectedIntegrantes="selectedIntegrantes"
             >
-              <path
-                d="M9 13.75c-2.34 0-7 1.17-7 3.5V19h14v-1.75c0-2.33-4.66-3.5-7-3.5zM4.34 17c.84-.58 2.87-1.25 4.66-1.25s3.82.67 4.66 1.25H4.34zM9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm0-5c.83 0 1.5.67 1.5 1.5S9.83 10 9 10s-1.5-.67-1.5-1.5S8.17 7 9 7zm7.04 6.81c1.16.84 1.96 1.96 1.96 3.44V19h4v-1.75c0-2.02-3.5-3.17-5.96-3.44zM15 12c1.93 0 3.5-1.57 3.5-3.5S16.93 5 15 5c-.54 0-1.04.13-1.5.35.63.89 1 1.98 1 3.15s-.37 2.26-1 3.15c.46.22.96.35 1.5.35z"
-              ></path>
-            </svg>
-            <!-- <p class="text-gray-600">
-                Contenido para añadir participantes (pendiente)
-              </p> -->
-            <p class="text-sm text-gray-400">
-              Aquí podrás invitar a otros miembros a unirse a tu grupo
-            </p>
+            </AgregarIntegrantesTable>
           </div>
         </div>
 
@@ -369,6 +430,7 @@ const tabIndicatorStyle = computed(() => {
             </button>
             <button
               v-else
+              @click="handleCreateGroup"
               class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200 ease-in-out"
             >
               Crear grupo
@@ -382,7 +444,7 @@ const tabIndicatorStyle = computed(() => {
 
 <style scoped>
 .backdrop-blur-sm {
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(0px);
 }
 
 /* Suavizado de interacciones y transiciones */
